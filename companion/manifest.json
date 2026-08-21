@@ -1,0 +1,28 @@
+{
+	"$schema": "../node_modules/@companion-module/base/assets/manifest.schema.json",
+	"type": "connection",
+	"id": "eventapps-screenfreeze",
+	"name": "eventapps-screenfreeze",
+	"shortname": "ScreenFreeze",
+	"description": "Control EventApps ScreenFreeze — fullscreen content in two layers, Freeze, Follow, streaming and recording — over its built-in HTTP API.",
+	"version": "0.0.0",
+	"license": "MIT",
+	"repository": "git+https://github.com/bitfocus/companion-module-eventapps-screenfreeze.git",
+	"bugs": "https://github.com/bitfocus/companion-module-eventapps-screenfreeze/issues",
+	"maintainers": [
+		{
+			"name": "EventApps",
+			"email": "info@eventapps.online"
+		}
+	],
+	"runtime": {
+		"type": "node22",
+		"api": "nodejs-ipc",
+		"apiVersion": "0.0.0",
+		"entrypoint": "../dist/main.js"
+	},
+	"legacyIds": [],
+	"manufacturer": "EventApps",
+	"products": ["ScreenFreeze"],
+	"keywords": ["display", "ndi", "presentation", "freeze", "video"]
+}
