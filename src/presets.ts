@@ -5,14 +5,14 @@ import type { ScreenFreezeSchema } from './main.js'
 const WHITE = combineRgb(255, 255, 255)
 const BLACK = combineRgb(0, 0, 0)
 const DARK = combineRgb(20, 22, 30)
-const GREEN = combineRgb(0, 160, 70)
 const RED = combineRgb(180, 40, 40)
-const BLUE = combineRgb(40, 90, 200)
 const AMBER = combineRgb(255, 176, 0)
 // Tally palette (matches the app): TOP red / BOTTOM blue; live/rec red for stream+record.
 const TALLY_TOP = combineRgb(255, 92, 108)
 const TALLY_BOTTOM = combineRgb(91, 141, 239)
 const LIVE_RED = combineRgb(255, 30, 30)
+const FREEZE_RED = combineRgb(255, 92, 108) // app FreezeColor #FF5C6C
+const FOLLOW_BLUE = combineRgb(91, 141, 239) // tally blue #5B8DEF
 
 const CENTER = 'center:center' as const
 
@@ -28,18 +28,18 @@ export function buildPresets(self: ScreenFreezeInstance): ScreenFreezePresets {
 	presets['freeze'] = {
 		type: 'simple',
 		name: 'Freeze (toggle)',
-		style: { text: 'FREEZE', size: '18', color: WHITE, bgcolor: DARK, alignment: CENTER },
+		style: { text: 'FREEZE', size: '14', color: WHITE, bgcolor: DARK, alignment: CENTER },
 		steps: [{ down: [{ actionId: 'freeze', options: {} }], up: [] }],
-		feedbacks: [{ feedbackId: 'freeze_on', options: {}, style: { bgcolor: GREEN } }],
+		feedbacks: [{ feedbackId: 'freeze_on', options: {}, style: { bgcolor: FREEZE_RED, color: WHITE } }],
 	}
 	presets['follow'] = {
 		type: 'simple',
 		name: 'Follow (toggle)',
-		style: { text: 'FOLLOW', size: '18', color: WHITE, bgcolor: DARK, alignment: CENTER },
+		style: { text: 'FOLLOW', size: '14', color: WHITE, bgcolor: DARK, alignment: CENTER },
 		steps: [{ down: [{ actionId: 'follow', options: {} }], up: [] }],
 		feedbacks: [
-			{ feedbackId: 'follow_on', options: {}, style: { bgcolor: GREEN } },
-			{ feedbackId: 'follow_holding', options: {}, style: { bgcolor: BLUE } },
+			{ feedbackId: 'follow_on', options: {}, style: { bgcolor: FOLLOW_BLUE, color: WHITE } },
+			{ feedbackId: 'follow_holding', options: {}, style: { bgcolor: AMBER, color: BLACK } },
 		],
 	}
 	presets['hide_all'] = {
@@ -59,7 +59,7 @@ export function buildPresets(self: ScreenFreezeInstance): ScreenFreezePresets {
 	presets['hide_bottom'] = {
 		type: 'simple',
 		name: 'Hide bottom layer',
-		style: { text: 'HIDE ▼', size: '18', color: WHITE, bgcolor: RED, alignment: CENTER },
+		style: { text: 'HIDE ▼', size: '18', color: WHITE, bgcolor: TALLY_BOTTOM, alignment: CENTER },
 		steps: [{ down: [{ actionId: 'hide', options: { layer: 'bottom' } }], up: [] }],
 		feedbacks: [],
 	}
@@ -77,7 +77,7 @@ export function buildPresets(self: ScreenFreezeInstance): ScreenFreezePresets {
 	presets['record'] = {
 		type: 'simple',
 		name: 'Record (toggle)',
-		style: { text: 'REC', size: '18', color: WHITE, bgcolor: DARK, alignment: CENTER },
+		style: { text: 'REC', size: '14', color: WHITE, bgcolor: DARK, alignment: CENTER },
 		steps: [{ down: [{ actionId: 'record', options: { mode: 'toggle' } }], up: [] }],
 		feedbacks: [
 			{ feedbackId: 'record_on', options: {}, style: { bgcolor: LIVE_RED, color: WHITE } },
@@ -110,7 +110,13 @@ export function buildPresets(self: ScreenFreezeInstance): ScreenFreezePresets {
 		presets[top] = {
 			type: 'simple',
 			name: `Top ${e.n}: ${e.name || '(empty)'}`,
-			style: { text: e.name || String(e.n), size: 'auto', color: WHITE, bgcolor: DARK, alignment: CENTER },
+			style: {
+				text: e.name || String(e.n),
+				size: e.name ? '14' : 'auto',
+				color: WHITE,
+				bgcolor: DARK,
+				alignment: CENTER,
+			},
 			steps: [{ down: [{ actionId: 'top_show', options: { n: e.id } }], up: [] }],
 			feedbacks: [{ feedbackId: 'top_active', options: { n: e.id }, style: { bgcolor: TALLY_TOP, color: WHITE } }],
 		}
@@ -119,7 +125,13 @@ export function buildPresets(self: ScreenFreezeInstance): ScreenFreezePresets {
 		presets[bottom] = {
 			type: 'simple',
 			name: `Bottom ${e.n}: ${e.name || '(empty)'}`,
-			style: { text: e.name || String(e.n), size: 'auto', color: WHITE, bgcolor: DARK, alignment: CENTER },
+			style: {
+				text: e.name || String(e.n),
+				size: e.name ? '14' : 'auto',
+				color: WHITE,
+				bgcolor: DARK,
+				alignment: CENTER,
+			},
 			steps: [{ down: [{ actionId: 'bottom_show', options: { n: e.id } }], up: [] }],
 			feedbacks: [
 				{ feedbackId: 'bottom_active', options: { n: e.id }, style: { bgcolor: TALLY_BOTTOM, color: WHITE } },

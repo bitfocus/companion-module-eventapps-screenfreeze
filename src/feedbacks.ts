@@ -2,8 +2,6 @@ import { combineRgb, type CompanionFeedbackDefinitions } from '@companion-module
 import type ScreenFreezeInstance from './main.js'
 import { fmtClock, slotLabel } from './state.js'
 
-const GREEN = combineRgb(0, 140, 60)
-const BLUE = combineRgb(40, 90, 200)
 const AMBER = combineRgb(255, 176, 0)
 const RED = combineRgb(255, 64, 64)
 const WHITE = combineRgb(255, 255, 255)
@@ -12,6 +10,8 @@ const BLACK = combineRgb(0, 0, 0)
 const TALLY_TOP = combineRgb(255, 92, 108)
 const TALLY_BOTTOM = combineRgb(91, 141, 239)
 const LIVE_RED = combineRgb(255, 30, 30)
+const FREEZE_RED = combineRgb(255, 92, 108) // app FreezeColor #FF5C6C
+const FOLLOW_BLUE = combineRgb(91, 141, 239) // tally blue #5B8DEF
 
 // Big, centred countdown text that overrides the button label while a video plays.
 const COUNTDOWN_SIZE = 22
@@ -69,22 +69,22 @@ export function buildFeedbacks(self: ScreenFreezeInstance): CompanionFeedbackDef
 		},
 		freeze_on: {
 			type: 'boolean',
-			name: 'Freeze is active (green background)',
-			defaultStyle: { bgcolor: GREEN },
+			name: 'Freeze is active (red background)',
+			defaultStyle: { bgcolor: FREEZE_RED, color: WHITE },
 			options: [],
 			callback: () => self.state.freeze,
 		},
 		follow_on: {
 			type: 'boolean',
-			name: 'Follow is ON (green background)',
-			defaultStyle: { bgcolor: GREEN },
+			name: 'Follow is ON (blue background)',
+			defaultStyle: { bgcolor: FOLLOW_BLUE, color: WHITE },
 			options: [],
 			callback: () => self.state.follow,
 		},
 		follow_holding: {
 			type: 'boolean',
-			name: 'Follow is holding a frame (blue background)',
-			defaultStyle: { bgcolor: BLUE },
+			name: 'Follow is holding a frame (amber background) — layer over "Follow is ON"',
+			defaultStyle: { bgcolor: AMBER, color: BLACK },
 			options: [],
 			callback: () => self.state.followHolding,
 		},
@@ -130,20 +130,28 @@ export function buildFeedbacks(self: ScreenFreezeInstance): CompanionFeedbackDef
 		},
 		stream_timer: {
 			type: 'advanced',
-			name: 'Streaming elapsed time (centred) — overrides label while running',
+			name: 'Streaming label + elapsed time ("STREAM" + time) — overrides label while running',
 			options: [],
 			callback: () =>
 				self.state.stream > 0
-					? { text: fmtClock(self.state.streamElapsedSec * 1000), size: 18, alignment: 'center:center' as const }
+					? {
+							text: 'STREAM\n' + fmtClock(self.state.streamElapsedSec * 1000),
+							size: 14,
+							alignment: 'center:center' as const,
+						}
 					: {},
 		},
 		record_timer: {
 			type: 'advanced',
-			name: 'Recording elapsed time (centred) — overrides label while running',
+			name: 'Recording label + elapsed time ("REC" + time) — overrides label while running',
 			options: [],
 			callback: () =>
 				self.state.record > 0
-					? { text: fmtClock(self.state.recordElapsedSec * 1000), size: 18, alignment: 'center:center' as const }
+					? {
+							text: 'REC\n' + fmtClock(self.state.recordElapsedSec * 1000),
+							size: 14,
+							alignment: 'center:center' as const,
+						}
 					: {},
 		},
 	}
