@@ -1,6 +1,6 @@
 import type { CompanionVariableDefinitions, CompanionVariableValue } from '@companion-module/base'
 import type ScreenFreezeInstance from './main.js'
-import type { SFState } from './state.js'
+import { fmtClock, type SFState } from './state.js'
 
 // Per-slot variable ids are generated, so the schema is an open map.
 export type VariablesSchema = Record<string, CompanionVariableValue>
@@ -18,6 +18,12 @@ export function buildVariables(self: ScreenFreezeInstance): CompanionVariableDef
 		follow_hold_sec: { name: 'Follow hold time (s)' },
 		stream: { name: 'Stream state (0 off / 1 running / 2 problem)' },
 		record: { name: 'Record state (0 off / 1 running / 2 problem)' },
+		top_remaining: { name: 'Top layer video remaining (m:ss)' },
+		top_elapsed: { name: 'Top layer video elapsed (m:ss)' },
+		top_total: { name: 'Top layer video total (m:ss)' },
+		bottom_remaining: { name: 'Bottom layer video remaining (m:ss)' },
+		bottom_elapsed: { name: 'Bottom layer video elapsed (m:ss)' },
+		bottom_total: { name: 'Bottom layer video total (m:ss)' },
 	}
 	for (const e of self.state.slots) {
 		defs[`slot_${e.n}_name`] = { name: `Slot ${e.n} name` }
@@ -45,6 +51,12 @@ export function variableValues(self: ScreenFreezeInstance): Partial<VariablesSch
 		follow_hold_sec: s.followHoldSec ?? 0,
 		stream: s.stream,
 		record: s.record,
+		top_remaining: s.topPlaying ? fmtClock(s.topRemainingMs) : '',
+		top_elapsed: s.topPlaying ? fmtClock(s.topElapsedMs) : '',
+		top_total: s.topPlaying ? fmtClock(s.topLengthMs) : '',
+		bottom_remaining: s.bottomPlaying ? fmtClock(s.bottomRemainingMs) : '',
+		bottom_elapsed: s.bottomPlaying ? fmtClock(s.bottomElapsedMs) : '',
+		bottom_total: s.bottomPlaying ? fmtClock(s.bottomLengthMs) : '',
 	}
 	for (const e of s.slots) {
 		v[`slot_${e.n}_name`] = e.name

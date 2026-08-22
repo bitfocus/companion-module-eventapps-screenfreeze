@@ -50,6 +50,14 @@ The server also keeps the legacy OSC interface running in parallel.
 	"followHoldSec": 0,
 	"stream": 0, // 0 off / 1 running / 2 problem
 	"record": 0,
+	"topPlaying": false, // a video is playing in the top layer (images/web/NDI = false)
+	"topElapsedMs": 0,
+	"topLengthMs": 0,
+	"topRemainingMs": 0,
+	"bottomPlaying": false,
+	"bottomElapsedMs": 0,
+	"bottomLengthMs": 0,
+	"bottomRemainingMs": 0,
 	"slots": [
 		// always 1..9
 		{ "id": "1", "n": 1, "name": "Intro", "kind": "Image", "empty": false },

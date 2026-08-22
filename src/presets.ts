@@ -16,6 +16,7 @@ export interface ScreenFreezePresets {
 }
 
 export function buildPresets(self: ScreenFreezeInstance): ScreenFreezePresets {
+	const L = self.label
 	const presets: CompanionPresetDefinitions<ScreenFreezeSchema> = {}
 
 	presets['freeze'] = {
@@ -42,6 +43,20 @@ export function buildPresets(self: ScreenFreezeInstance): ScreenFreezePresets {
 		steps: [{ down: [{ actionId: 'hide', options: { layer: 'both' } }], up: [] }],
 		feedbacks: [],
 	}
+	presets['hide_top'] = {
+		type: 'simple',
+		name: 'Hide top layer',
+		style: { text: 'HIDE ▲', size: '18', color: WHITE, bgcolor: RED, alignment: CENTER },
+		steps: [{ down: [{ actionId: 'hide', options: { layer: 'top' } }], up: [] }],
+		feedbacks: [],
+	}
+	presets['hide_bottom'] = {
+		type: 'simple',
+		name: 'Hide bottom layer',
+		style: { text: 'HIDE ▼', size: '18', color: WHITE, bgcolor: RED, alignment: CENTER },
+		steps: [{ down: [{ actionId: 'hide', options: { layer: 'bottom' } }], up: [] }],
+		feedbacks: [],
+	}
 	presets['stream'] = {
 		type: 'simple',
 		name: 'Stream (toggle)',
@@ -55,6 +70,21 @@ export function buildPresets(self: ScreenFreezeInstance): ScreenFreezePresets {
 		style: { text: 'REC', size: '18', color: WHITE, bgcolor: DARK, alignment: CENTER },
 		steps: [{ down: [{ actionId: 'record', options: { mode: 'toggle' } }], up: [] }],
 		feedbacks: [{ feedbackId: 'record_on', options: {}, style: { bgcolor: GREEN } }],
+	}
+
+	presets['now_top'] = {
+		type: 'simple',
+		name: 'Top layer: now playing + countdown',
+		style: { text: `TOP\n$(${L}:top_name)`, size: '14', color: WHITE, bgcolor: DARK, alignment: CENTER },
+		steps: [{ down: [{ actionId: 'hide', options: { layer: 'top' } }], up: [] }],
+		feedbacks: [{ feedbackId: 'top_countdown', options: {} }],
+	}
+	presets['now_bottom'] = {
+		type: 'simple',
+		name: 'Bottom layer: now playing + countdown',
+		style: { text: `BOT\n$(${L}:bottom_name)`, size: '14', color: WHITE, bgcolor: DARK, alignment: CENTER },
+		steps: [{ down: [{ actionId: 'hide', options: { layer: 'bottom' } }], up: [] }],
+		feedbacks: [{ feedbackId: 'bottom_countdown', options: {} }],
 	}
 
 	// per-slot buttons for each layer: label = slot name (auto-fit); active slot -> green
@@ -82,7 +112,12 @@ export function buildPresets(self: ScreenFreezeInstance): ScreenFreezePresets {
 	}
 
 	const structure: CompanionPresetSection<ScreenFreezeSchema>[] = [
-		{ id: 'control', name: 'Control', definitions: ['freeze', 'follow', 'hide_all', 'stream', 'record'] },
+		{
+			id: 'control',
+			name: 'Control',
+			definitions: ['freeze', 'follow', 'hide_all', 'hide_top', 'hide_bottom', 'stream', 'record'],
+		},
+		{ id: 'playing', name: 'Now playing', definitions: ['now_top', 'now_bottom'] },
 		{ id: 'top', name: 'Top layer', definitions: topIds },
 		{ id: 'bottom', name: 'Bottom layer', definitions: bottomIds },
 	]

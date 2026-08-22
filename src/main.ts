@@ -19,7 +19,7 @@ export type ScreenFreezeSchema = {
 export { UpgradeScripts }
 
 export default class ScreenFreezeInstance extends InstanceBase<ScreenFreezeSchema> {
-	config: ScreenFreezeConfig = { host: '', port: 8772, token: '', poll: 250 }
+	config: ScreenFreezeConfig = { host: '', port: 8772, token: '', poll: 250, warnSec: 20, dangerSec: 10 }
 	api: SFApi = new SFApi('', 8772, '')
 	state: SFState = emptyState()
 	online = false

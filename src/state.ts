@@ -20,6 +20,14 @@ export interface SFState {
 	followHoldSec: number
 	stream: number // 0 off, 1 running, 2 running with a problem
 	record: number // 0 off, 1 running, 2 running with a problem
+	topPlaying: boolean // a video is playing in the top layer (images/web/NDI = false)
+	topElapsedMs: number
+	topLengthMs: number
+	topRemainingMs: number
+	bottomPlaying: boolean
+	bottomElapsedMs: number
+	bottomLengthMs: number
+	bottomRemainingMs: number
 	slots: SlotEntry[]
 }
 
@@ -36,8 +44,25 @@ export function emptyState(): SFState {
 		followHoldSec: 0,
 		stream: 0,
 		record: 0,
+		topPlaying: false,
+		topElapsedMs: 0,
+		topLengthMs: 0,
+		topRemainingMs: 0,
+		bottomPlaying: false,
+		bottomElapsedMs: 0,
+		bottomLengthMs: 0,
+		bottomRemainingMs: 0,
 		slots: [],
 	}
+}
+
+// milliseconds -> "m:ss"
+export function fmtClock(ms: number): string {
+	if (!isFinite(ms) || ms < 0) ms = 0
+	const total = Math.floor(ms / 1000)
+	const m = Math.floor(total / 60)
+	const s = total % 60
+	return m + ':' + String(s).padStart(2, '0')
 }
 
 // Signature of the slot LIST (ids + labels + kind + empty). When it changes we rebuild
