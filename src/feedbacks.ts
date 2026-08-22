@@ -7,6 +7,11 @@ const BLUE = combineRgb(40, 90, 200)
 const AMBER = combineRgb(255, 176, 0)
 const RED = combineRgb(255, 64, 64)
 const WHITE = combineRgb(255, 255, 255)
+const BLACK = combineRgb(0, 0, 0)
+// Tally palette (matches the app: TOP red / BOTTOM blue) + live/rec red.
+const TALLY_TOP = combineRgb(255, 92, 108)
+const TALLY_BOTTOM = combineRgb(91, 141, 239)
+const LIVE_RED = combineRgb(255, 30, 30)
 
 // Big, centred countdown text that overrides the button label while a video plays.
 const COUNTDOWN_SIZE = 22
@@ -22,8 +27,12 @@ export type FeedbacksSchema = {
 	follow_holding: { type: 'boolean'; options: NoOptions }
 	stream_on: { type: 'boolean'; options: NoOptions }
 	record_on: { type: 'boolean'; options: NoOptions }
+	stream_trouble: { type: 'boolean'; options: NoOptions }
+	record_trouble: { type: 'boolean'; options: NoOptions }
 	top_countdown: { type: 'advanced'; options: NoOptions }
 	bottom_countdown: { type: 'advanced'; options: NoOptions }
+	stream_timer: { type: 'advanced'; options: NoOptions }
+	record_timer: { type: 'advanced'; options: NoOptions }
 }
 
 export function buildFeedbacks(self: ScreenFreezeInstance): CompanionFeedbackDefinitions<FeedbacksSchema> {
@@ -46,15 +55,15 @@ export function buildFeedbacks(self: ScreenFreezeInstance): CompanionFeedbackDef
 	return {
 		top_active: {
 			type: 'boolean',
-			name: 'Top layer: slot is active (green background)',
-			defaultStyle: { bgcolor: GREEN },
+			name: 'Top layer: slot is active (red background)',
+			defaultStyle: { bgcolor: TALLY_TOP, color: WHITE },
 			options: [{ type: 'dropdown', id: 'n', label: 'Slot', default: firstSlot, choices: slotChoices }],
 			callback: (fb) => self.state.top === Number(fb.options.n),
 		},
 		bottom_active: {
 			type: 'boolean',
-			name: 'Bottom layer: slot is active (green background)',
-			defaultStyle: { bgcolor: GREEN },
+			name: 'Bottom layer: slot is active (blue background)',
+			defaultStyle: { bgcolor: TALLY_BOTTOM, color: WHITE },
 			options: [{ type: 'dropdown', id: 'n', label: 'Slot', default: firstSlot, choices: slotChoices }],
 			callback: (fb) => self.state.bottom === Number(fb.options.n),
 		},
@@ -81,17 +90,31 @@ export function buildFeedbacks(self: ScreenFreezeInstance): CompanionFeedbackDef
 		},
 		stream_on: {
 			type: 'boolean',
-			name: 'Streaming is running (green background)',
-			defaultStyle: { bgcolor: GREEN },
+			name: 'Streaming is running (red background)',
+			defaultStyle: { bgcolor: LIVE_RED, color: WHITE },
 			options: [],
 			callback: () => self.state.stream > 0,
 		},
 		record_on: {
 			type: 'boolean',
-			name: 'Recording is running (green background)',
-			defaultStyle: { bgcolor: GREEN },
+			name: 'Recording is running (red background)',
+			defaultStyle: { bgcolor: LIVE_RED, color: WHITE },
 			options: [],
 			callback: () => self.state.record > 0,
+		},
+		stream_trouble: {
+			type: 'boolean',
+			name: 'Streaming has a problem (amber background) — layer over "Streaming is running"',
+			defaultStyle: { bgcolor: AMBER, color: BLACK },
+			options: [],
+			callback: () => self.state.stream === 2,
+		},
+		record_trouble: {
+			type: 'boolean',
+			name: 'Recording has a problem (amber background) — layer over "Recording is running"',
+			defaultStyle: { bgcolor: AMBER, color: BLACK },
+			options: [],
+			callback: () => self.state.record === 2,
 		},
 		top_countdown: {
 			type: 'advanced',
@@ -104,6 +127,24 @@ export function buildFeedbacks(self: ScreenFreezeInstance): CompanionFeedbackDef
 			name: 'Bottom layer video countdown (centred, amber/red) — overrides label while playing',
 			options: [],
 			callback: () => (self.state.bottomPlaying ? countdown(self.state.bottomRemainingMs) : {}),
+		},
+		stream_timer: {
+			type: 'advanced',
+			name: 'Streaming elapsed time (centred) — overrides label while running',
+			options: [],
+			callback: () =>
+				self.state.stream > 0
+					? { text: fmtClock(self.state.streamElapsedSec * 1000), size: 18, alignment: 'center:center' as const }
+					: {},
+		},
+		record_timer: {
+			type: 'advanced',
+			name: 'Recording elapsed time (centred) — overrides label while running',
+			options: [],
+			callback: () =>
+				self.state.record > 0
+					? { text: fmtClock(self.state.recordElapsedSec * 1000), size: 18, alignment: 'center:center' as const }
+					: {},
 		},
 	}
 }

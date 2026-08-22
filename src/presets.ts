@@ -3,10 +3,16 @@ import type ScreenFreezeInstance from './main.js'
 import type { ScreenFreezeSchema } from './main.js'
 
 const WHITE = combineRgb(255, 255, 255)
+const BLACK = combineRgb(0, 0, 0)
 const DARK = combineRgb(20, 22, 30)
 const GREEN = combineRgb(0, 160, 70)
 const RED = combineRgb(180, 40, 40)
 const BLUE = combineRgb(40, 90, 200)
+const AMBER = combineRgb(255, 176, 0)
+// Tally palette (matches the app): TOP red / BOTTOM blue; live/rec red for stream+record.
+const TALLY_TOP = combineRgb(255, 92, 108)
+const TALLY_BOTTOM = combineRgb(91, 141, 239)
+const LIVE_RED = combineRgb(255, 30, 30)
 
 const CENTER = 'center:center' as const
 
@@ -62,14 +68,22 @@ export function buildPresets(self: ScreenFreezeInstance): ScreenFreezePresets {
 		name: 'Stream (toggle)',
 		style: { text: 'STREAM', size: '14', color: WHITE, bgcolor: DARK, alignment: CENTER },
 		steps: [{ down: [{ actionId: 'stream', options: { mode: 'toggle' } }], up: [] }],
-		feedbacks: [{ feedbackId: 'stream_on', options: {}, style: { bgcolor: GREEN } }],
+		feedbacks: [
+			{ feedbackId: 'stream_on', options: {}, style: { bgcolor: LIVE_RED, color: WHITE } },
+			{ feedbackId: 'stream_trouble', options: {}, style: { bgcolor: AMBER, color: BLACK } },
+			{ feedbackId: 'stream_timer', options: {} },
+		],
 	}
 	presets['record'] = {
 		type: 'simple',
 		name: 'Record (toggle)',
 		style: { text: 'REC', size: '18', color: WHITE, bgcolor: DARK, alignment: CENTER },
 		steps: [{ down: [{ actionId: 'record', options: { mode: 'toggle' } }], up: [] }],
-		feedbacks: [{ feedbackId: 'record_on', options: {}, style: { bgcolor: GREEN } }],
+		feedbacks: [
+			{ feedbackId: 'record_on', options: {}, style: { bgcolor: LIVE_RED, color: WHITE } },
+			{ feedbackId: 'record_trouble', options: {}, style: { bgcolor: AMBER, color: BLACK } },
+			{ feedbackId: 'record_timer', options: {} },
+		],
 	}
 
 	presets['now_top'] = {
@@ -98,7 +112,7 @@ export function buildPresets(self: ScreenFreezeInstance): ScreenFreezePresets {
 			name: `Top ${e.n}: ${e.name || '(empty)'}`,
 			style: { text: e.name || String(e.n), size: 'auto', color: WHITE, bgcolor: DARK, alignment: CENTER },
 			steps: [{ down: [{ actionId: 'top_show', options: { n: e.id } }], up: [] }],
-			feedbacks: [{ feedbackId: 'top_active', options: { n: e.id }, style: { bgcolor: GREEN } }],
+			feedbacks: [{ feedbackId: 'top_active', options: { n: e.id }, style: { bgcolor: TALLY_TOP, color: WHITE } }],
 		}
 		const bottom = 'bottom_' + e.id
 		bottomIds.push(bottom)
@@ -107,7 +121,9 @@ export function buildPresets(self: ScreenFreezeInstance): ScreenFreezePresets {
 			name: `Bottom ${e.n}: ${e.name || '(empty)'}`,
 			style: { text: e.name || String(e.n), size: 'auto', color: WHITE, bgcolor: DARK, alignment: CENTER },
 			steps: [{ down: [{ actionId: 'bottom_show', options: { n: e.id } }], up: [] }],
-			feedbacks: [{ feedbackId: 'bottom_active', options: { n: e.id }, style: { bgcolor: GREEN } }],
+			feedbacks: [
+				{ feedbackId: 'bottom_active', options: { n: e.id }, style: { bgcolor: TALLY_BOTTOM, color: WHITE } },
+			],
 		}
 	}
 

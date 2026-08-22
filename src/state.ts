@@ -20,6 +20,8 @@ export interface SFState {
 	followHoldSec: number
 	stream: number // 0 off, 1 running, 2 running with a problem
 	record: number // 0 off, 1 running, 2 running with a problem
+	streamElapsedSec: number // seconds since streaming started (0 when off)
+	recordElapsedSec: number
 	topPlaying: boolean // a video is playing in the top layer (images/web/NDI = false)
 	topElapsedMs: number
 	topLengthMs: number
@@ -44,6 +46,8 @@ export function emptyState(): SFState {
 		followHoldSec: 0,
 		stream: 0,
 		record: 0,
+		streamElapsedSec: 0,
+		recordElapsedSec: 0,
 		topPlaying: false,
 		topElapsedMs: 0,
 		topLengthMs: 0,
