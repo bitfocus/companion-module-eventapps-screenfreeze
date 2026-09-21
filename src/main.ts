@@ -26,6 +26,9 @@ export default class ScreenFreezeInstance extends InstanceBase<ScreenFreezeSchem
 
 	private timer: NodeJS.Timeout | undefined
 	private sig = ''
+	// Last status pushed to Companion — updateStatus() must fire on TRANSITIONS only
+	// (per-poll calls at 4x/s flood the Companion log; see the publishing playbook).
+	private lastStatus: 'ok' | 'fail' | 'badconfig' | '' = ''
 
 	async init(config: ScreenFreezeConfig): Promise<void> {
 		this.config = config
@@ -44,6 +47,7 @@ export default class ScreenFreezeInstance extends InstanceBase<ScreenFreezeSchem
 		this.config = config
 		this.api = new SFApi(config.host, config.port, config.token)
 		this.online = false
+		this.lastStatus = '' // reconfig → report the next status once, whatever it is
 		this.sig = ''
 		this.rebuildDefinitions()
 		this.restartPolling()
@@ -70,13 +74,19 @@ export default class ScreenFreezeInstance extends InstanceBase<ScreenFreezeSchem
 
 	private async poll(): Promise<void> {
 		if (!this.config.host) {
-			this.updateStatus(InstanceStatus.BadConfig, 'Set the ScreenFreeze IP address')
+			// Transition-guarded like every other status below: updateStatus() on EVERY poll
+			// (4x/s) floods the Companion log — report each state once, on the CHANGE only.
+			if (this.lastStatus !== 'badconfig') {
+				this.lastStatus = 'badconfig'
+				this.updateStatus(InstanceStatus.BadConfig, 'Set the ScreenFreeze IP address')
+			}
 			return
 		}
 		try {
 			this.state = await this.api.fetchState()
-			if (!this.online) {
+			if (!this.online || this.lastStatus !== 'ok') {
 				this.online = true
+				this.lastStatus = 'ok'
 				this.updateStatus(InstanceStatus.Ok)
 			}
 			const sig = listSignature(this.state)
@@ -87,8 +97,13 @@ export default class ScreenFreezeInstance extends InstanceBase<ScreenFreezeSchem
 			this.setVariableValues(variableValues(this))
 			this.checkAllFeedbacks()
 		} catch (e) {
-			this.online = false
-			this.updateStatus(InstanceStatus.ConnectionFailure, String((e as Error).message))
+			// Only the FIRST failure reports (and logs); repeated identical failures at poll
+			// rate would spam the log for as long as ScreenFreeze is unreachable.
+			if (this.online || this.lastStatus !== 'fail') {
+				this.online = false
+				this.lastStatus = 'fail'
+				this.updateStatus(InstanceStatus.ConnectionFailure, String((e as Error).message))
+			}
 			this.setVariableValues(variableValues(this))
 		}
 	}
