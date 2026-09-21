@@ -28,7 +28,11 @@ export default class ScreenFreezeInstance extends InstanceBase<ScreenFreezeSchem
 	private sig = ''
 	// Last status pushed to Companion — updateStatus() must fire on TRANSITIONS only
 	// (per-poll calls at 4x/s flood the Companion log; see the publishing playbook).
+	// lastFailMsg refines the guard: a CHANGED error message re-reports once (e.g.
+	// "fetch failed" -> "HTTP 401" while the operator is fixing the token), while an
+	// unchanged one stays suppressed at poll rate.
 	private lastStatus: 'ok' | 'fail' | 'badconfig' | '' = ''
+	private lastFailMsg = ''
 
 	async init(config: ScreenFreezeConfig): Promise<void> {
 		this.config = config
@@ -48,6 +52,7 @@ export default class ScreenFreezeInstance extends InstanceBase<ScreenFreezeSchem
 		this.api = new SFApi(config.host, config.port, config.token)
 		this.online = false
 		this.lastStatus = '' // reconfig → report the next status once, whatever it is
+		this.lastFailMsg = ''
 		this.sig = ''
 		this.rebuildDefinitions()
 		this.restartPolling()
@@ -97,12 +102,14 @@ export default class ScreenFreezeInstance extends InstanceBase<ScreenFreezeSchem
 			this.setVariableValues(variableValues(this))
 			this.checkAllFeedbacks()
 		} catch (e) {
-			// Only the FIRST failure reports (and logs); repeated identical failures at poll
-			// rate would spam the log for as long as ScreenFreeze is unreachable.
-			if (this.online || this.lastStatus !== 'fail') {
+			// Only the FIRST failure (or a failure with a DIFFERENT message) reports; repeating
+			// the same error at poll rate would spam the log for as long as the app is down.
+			const msg = String((e as Error).message)
+			if (this.online || this.lastStatus !== 'fail' || msg !== this.lastFailMsg) {
 				this.online = false
 				this.lastStatus = 'fail'
-				this.updateStatus(InstanceStatus.ConnectionFailure, String((e as Error).message))
+				this.lastFailMsg = msg
+				this.updateStatus(InstanceStatus.ConnectionFailure, msg)
 			}
 			this.setVariableValues(variableValues(this))
 		}
