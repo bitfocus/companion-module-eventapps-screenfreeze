@@ -38,7 +38,7 @@ export default class ScreenFreezeInstance extends InstanceBase<ScreenFreezeSchem
 		this.config = config
 		this.api = new SFApi(config.host, config.port, config.token)
 		this.rebuildDefinitions()
-		this.updateStatus(InstanceStatus.Connecting)
+		if (this.config.host) this.updateStatus(InstanceStatus.Connecting)
 		this.restartPolling()
 	}
 
@@ -72,6 +72,17 @@ export default class ScreenFreezeInstance extends InstanceBase<ScreenFreezeSchem
 
 	private restartPolling(): void {
 		if (this.timer) clearInterval(this.timer)
+		this.timer = undefined
+		// While unconfigured, do NOT poll at all: no timer, no HTTP requests — just a single
+		// bad_config status. Polling starts from configUpdated() once a host is entered.
+		// (Same behaviour the reviewers asked for on eventapps-cueplayer.)
+		if (!this.config.host) {
+			if (this.lastStatus !== 'badconfig') {
+				this.lastStatus = 'badconfig'
+				this.updateStatus(InstanceStatus.BadConfig, 'Set the ScreenFreeze IP address')
+			}
+			return
+		}
 		const iv = Math.max(100, Number(this.config.poll) || 250)
 		this.timer = setInterval(() => void this.poll(), iv)
 		void this.poll()
