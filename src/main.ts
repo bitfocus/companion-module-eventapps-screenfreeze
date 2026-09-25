@@ -1,5 +1,5 @@
 import { InstanceBase, InstanceStatus, type SomeCompanionConfigField } from '@companion-module/base'
-import { getConfigFields, type ScreenFreezeConfig } from './config.js'
+import { getConfigFields, type ScreenFreezeConfig, type ScreenFreezeSecrets } from './config.js'
 import { SFApi } from './api.js'
 import { emptyState, listSignature, type SFState } from './state.js'
 import { buildActions, type ActionsSchema } from './actions.js'
@@ -10,7 +10,7 @@ import { UpgradeScripts } from './upgrades.js'
 
 export type ScreenFreezeSchema = {
 	config: ScreenFreezeConfig
-	secrets: undefined
+	secrets: ScreenFreezeSecrets
 	actions: ActionsSchema
 	feedbacks: FeedbacksSchema
 	variables: VariablesSchema
@@ -19,12 +19,17 @@ export type ScreenFreezeSchema = {
 export { UpgradeScripts }
 
 export default class ScreenFreezeInstance extends InstanceBase<ScreenFreezeSchema> {
-	config: ScreenFreezeConfig = { host: '', port: 8772, token: '', poll: 250, warnSec: 20, dangerSec: 10 }
+	config: ScreenFreezeConfig = { host: '', port: 8772, poll: 250, warnSec: 20, dangerSec: 10 }
 	api: SFApi = new SFApi('', 8772, '')
 	state: SFState = emptyState()
 	online = false
 
 	private timer: NodeJS.Timeout | undefined
+	private refreshTimeout: NodeJS.Timeout | undefined
+	// In-flight guard: the fetch timeout (2500 ms) is longer than the poll interval
+	// (>= 100 ms), so without this a slow/unreachable app would stack concurrent GETs
+	// and late responses could overwrite newer state out of order.
+	private polling = false
 	private sig = ''
 	// Last status pushed to Companion — updateStatus() must fire on TRANSITIONS only
 	// (per-poll calls at 4x/s flood the Companion log; see the publishing playbook).
@@ -34,9 +39,13 @@ export default class ScreenFreezeInstance extends InstanceBase<ScreenFreezeSchem
 	private lastStatus: 'ok' | 'fail' | 'badconfig' | '' = ''
 	private lastFailMsg = ''
 
-	async init(config: ScreenFreezeConfig): Promise<void> {
+	async init(
+		config: ScreenFreezeConfig,
+		_isFirstInit: boolean,
+		secrets: ScreenFreezeSecrets | undefined,
+	): Promise<void> {
 		this.config = config
-		this.api = new SFApi(config.host, config.port, config.token)
+		this.api = new SFApi(config.host, config.port, secrets?.token ?? '')
 		this.rebuildDefinitions()
 		if (this.config.host) this.updateStatus(InstanceStatus.Connecting)
 		this.restartPolling()
@@ -45,11 +54,13 @@ export default class ScreenFreezeInstance extends InstanceBase<ScreenFreezeSchem
 	async destroy(): Promise<void> {
 		if (this.timer) clearInterval(this.timer)
 		this.timer = undefined
+		if (this.refreshTimeout) clearTimeout(this.refreshTimeout)
+		this.refreshTimeout = undefined
 	}
 
-	async configUpdated(config: ScreenFreezeConfig): Promise<void> {
+	async configUpdated(config: ScreenFreezeConfig, secrets: ScreenFreezeSecrets | undefined): Promise<void> {
 		this.config = config
-		this.api = new SFApi(config.host, config.port, config.token)
+		this.api = new SFApi(config.host, config.port, secrets?.token ?? '')
 		this.online = false
 		this.lastStatus = '' // reconfig → report the next status once, whatever it is
 		this.lastFailMsg = ''
@@ -89,6 +100,7 @@ export default class ScreenFreezeInstance extends InstanceBase<ScreenFreezeSchem
 	}
 
 	private async poll(): Promise<void> {
+		if (this.polling) return // previous request still in flight — skip this tick
 		if (!this.config.host) {
 			// Transition-guarded like every other status below: updateStatus() on EVERY poll
 			// (4x/s) floods the Companion log — report each state once, on the CHANGE only.
@@ -98,6 +110,7 @@ export default class ScreenFreezeInstance extends InstanceBase<ScreenFreezeSchem
 			}
 			return
 		}
+		this.polling = true
 		try {
 			this.state = await this.api.fetchState()
 			if (!this.online || this.lastStatus !== 'ok') {
@@ -123,12 +136,18 @@ export default class ScreenFreezeInstance extends InstanceBase<ScreenFreezeSchem
 				this.updateStatus(InstanceStatus.ConnectionFailure, msg)
 			}
 			this.setVariableValues(variableValues(this))
+		} finally {
+			this.polling = false
 		}
 	}
 
-	// fire-and-forget command, then a quick optimistic refresh
+	// fire-and-forget command, then a quick optimistic refresh (tracked so destroy() can cancel it)
 	send(path: string): void {
 		this.api.cmd(path).catch(() => {})
-		setTimeout(() => void this.poll(), 90)
+		if (this.refreshTimeout) clearTimeout(this.refreshTimeout)
+		this.refreshTimeout = setTimeout(() => {
+			this.refreshTimeout = undefined
+			void this.poll()
+		}, 90)
 	}
 }
